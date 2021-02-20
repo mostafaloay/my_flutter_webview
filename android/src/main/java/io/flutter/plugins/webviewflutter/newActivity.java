@@ -18,6 +18,8 @@ import android.view.ViewGroup;
 import android.view.Window;
 import android.view.WindowManager;
 import android.webkit.ValueCallback;
+import android.widget.Toast;
+
 import androidx.annotation.Nullable;
 import androidx.annotation.RequiresApi;
 import androidx.core.app.ActivityCompat;
@@ -28,6 +30,8 @@ import static android.content.ContentValues.TAG;
 
 public class newActivity extends Activity {
     private static ValueCallback<Uri[]> mUploadMessageArray;
+    private static final int PICK_Image_FILE = 2;
+    private static final int READ_EXTERNAL_STORAGE_Code = 1;
 
     public static void getfilePathCallback(ValueCallback<Uri[]> filePathCallback){
         mUploadMessageArray = filePathCallback;
@@ -39,9 +43,7 @@ public class newActivity extends Activity {
         super.onCreate(savedInstanceState);
 //        setContentView(R.layout.layout);
         getWindow().addFlags(WindowManager.LayoutParams.FLAG_TRANSLUCENT_STATUS);
-        boolean b = isStoragePermissionGranted();
-        //openCarem();
-        openAblum();
+        if(isStoragePermissionGranted()) openAblum();
 //        AlertDialog.Builder builder = new AlertDialog.Builder(newActivity.this,R.layout.dialog);
 //        builder.setTitle("请选择");
 //        final String[] sex = {"打开相册", "打开相机", "未知操作"};
@@ -78,38 +80,38 @@ public class newActivity extends Activity {
 
     public  boolean isStoragePermissionGranted() {
         if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.M) {
-            if (checkSelfPermission(android.Manifest.permission.READ_EXTERNAL_STORAGE)
+            if (checkSelfPermission(Manifest.permission.READ_EXTERNAL_STORAGE)
                     == PackageManager.PERMISSION_GRANTED) {
-                Log.v(TAG,"Permission is granted");
                 return true;
             } else {
 
-                Log.v(TAG,"Permission is revoked");
-                ActivityCompat.requestPermissions(this, new String[]{Manifest.permission.READ_EXTERNAL_STORAGE}, 1);
+                ActivityCompat.requestPermissions(this, new String[]{Manifest.permission.READ_EXTERNAL_STORAGE}, READ_EXTERNAL_STORAGE_Code);
                 return false;
             }
         }
         else { //permission is automatically granted on sdk<23 upon installation
-            Log.v(TAG,"Permission is granted");
             return true;
         }
     }
 
     @Override
-    public void onRequestPermissionsResult(int requestCode, String[] permissions, int[] grantResults) {
+    public void onRequestPermissionsResult (int requestCode, String[] permissions, int[] grantResults) {
         super.onRequestPermissionsResult(requestCode, permissions, grantResults);
-        if(grantResults.length > 0 && grantResults[0] == PackageManager.PERMISSION_GRANTED){
-            Log.v(TAG,"Permission: "+permissions[0]+ "was "+grantResults[0]);
-            //resume tasks needing this permission
+        switch (requestCode) {
+            case READ_EXTERNAL_STORAGE_Code:
+                if (grantResults.length > 0 && grantResults[0] == PackageManager.PERMISSION_GRANTED)
+                    openAblum();
+                else
+                 finish();
+                break;
         }
     }
 
-
     private void openAblum() {
-        Intent intent = new Intent(Intent.ACTION_GET_CONTENT);
+        Intent intent = new Intent(Intent.ACTION_OPEN_DOCUMENT);
         intent.setType("image/*");
         intent.addCategory(Intent.CATEGORY_OPENABLE);
-        startActivityForResult(intent,1);
+        startActivityForResult(intent, PICK_Image_FILE);
     }
 
     private void openCarem(){
@@ -170,14 +172,11 @@ public class newActivity extends Activity {
     @Override
     protected void onActivityResult(int requestCode, int resultCode, Intent data) {
         super.onActivityResult(requestCode, resultCode, data);
-        Log.i("TAG","forResult");
-        if(data != null){
+        if (resultCode == RESULT_OK) {
+            if(requestCode == PICK_Image_FILE){
+            if(data != null){
             Uri uri = data.getData();
-            Log.i("TAG","! "+data.getClass()+" * "+data);
-            Log.i("TAG","URi "+uri);
-
             if(uri==null){
-                Log.i("TAG", String.valueOf(data));
                 Bundle bundle = data.getExtras();
                 try {
                     Bitmap bitmap = (Bitmap) bundle.get("data");
@@ -198,9 +197,8 @@ public class newActivity extends Activity {
             }
 
         }else{
-            Log.i("TAG","onReceveValue");
             mUploadMessageArray.onReceiveValue(null);
-        }
+        }}}
         finish();
     }
 }
